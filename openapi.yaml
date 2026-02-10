@@ -1,0 +1,223 @@
+openapi: 3.0.3
+info:
+  title: Penyewaan Barang API
+  version: 1.0.0
+  description: API untuk manajemen kategori, alat, dan penyewaan.
+servers:
+  - url: http://localhost:8000/api
+paths:
+  /test:
+    get:
+      summary: Cek API
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: API works!
+
+  /kategori:
+    get:
+      summary: Dapatkan semua kategori
+      responses:
+        '200':
+          description: list kategori
+    post:
+      summary: Tambah kategori
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KategoriInput'
+      responses:
+        '200':
+          description: kategori dibuat
+
+  /kategori/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Dapatkan kategori by ID
+      responses:
+        '200':
+          description: kategori
+    put:
+      summary: Update kategori
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KategoriInput'
+      responses:
+        '200':
+          description: kategori diupdate
+    delete:
+      summary: Hapus kategori
+      responses:
+        '200':
+          description: kategori dihapus
+
+  /alat:
+    get:
+      summary: Dapatkan semua alat
+    post:
+      summary: Tambah alat
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlatInput'
+      responses:
+        '201':
+          description: alat dibuat
+
+  /alat/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Dapatkan alat by ID
+    put:
+      summary: Update alat
+      requestBody:
+        required: false
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlatInput'
+    delete:
+      summary: Hapus alat
+
+  /penyewaan:
+    get:
+      summary: Dapatkan semua penyewaan
+    post:
+      summary: Buat penyewaan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PenyewaanInput'
+
+  /penyewaan/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Dapatkan penyewaan by ID
+
+  /penyewaan/{id}/pembayaran:
+    put:
+      summary: Konfirmasi pembayaran penyewaan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: pembayaran dikonfirmasi
+
+  /admin/login:
+    post:
+      summary: Login admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLogin'
+      responses:
+        '200':
+          description: token dikembalikan
+
+  /admin/logout:
+    post:
+      summary: Logout admin (butuh auth)
+
+  /admin/me:
+    get:
+      summary: Informasi admin saat ini (butuh auth)
+
+components:
+  schemas:
+    KategoriInput:
+      type: object
+      properties:
+        kategori_nama:
+          type: string
+          example: Alat Elektronik
+      required:
+        - kategori_nama
+
+    AlatInput:
+      type: object
+      properties:
+        alat_kategori_id:
+          type: integer
+        alat_nama:
+          type: string
+        alat_deskripsi:
+          type: string
+        alat_hargaperhari:
+          type: integer
+        alat_stok:
+          type: integer
+        photo:
+          type: string
+          format: binary
+      required:
+        - alat_kategori_id
+        - alat_nama
+        - alat_hargaperhari
+        - alat_stok
+
+    PenyewaanInput:
+      type: object
+      properties:
+        penyewaan_pelanggan_id:
+          type: integer
+        penyewaan_tglsewa:
+          type: string
+          format: date
+        penyewaan_tglkembali:
+          type: string
+          format: date
+        penyewaan_totalharga:
+          type: integer
+      required:
+        - penyewaan_pelanggan_id
+        - penyewaan_tglsewa
+        - penyewaan_tglkembali
+        - penyewaan_totalharga
+
+    AdminLogin:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
