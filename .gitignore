@@ -2,7 +2,7 @@
 
 # dependencies
 node_modules/
-
+vendor
 # Expo
 .expo/
 dist/
