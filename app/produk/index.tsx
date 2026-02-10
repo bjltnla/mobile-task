@@ -1,52 +1,124 @@
-import React, { useState } from 'react';
+import { APP_CONFIG } from "@/src/app.config";
+import { CART_KEY, checkAuth, saveCart } from "@/src/helper";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
+  FlatList,
+  Image,
+  ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  FlatList,
-  ScrollView,
+  View,
 } from 'react-native';
 
-const productsData = [
-  { id: '1', name: 'IPHONE', price: 50000, category: 'HP', img: require('../../assets/images/iphone.jpg') },
-  { id: '2', name: 'REDMI', price: 40000, category: 'HP', img: require('../../assets/images/redmi.jpg') },
-  { id: '3', name: 'OPPO', price: 45000, category: 'HP', img: require('../../assets/images/oppo.jpg') },
-  { id: '4', name: 'SAMSUNG', price: 55000, category: 'HP', img: require('../../assets/images/samsung.jpg') },
-  { id: '5', name: 'LENOVO', price: 100000, category: 'Laptop', img: require('../../assets/images/laptop.jpg') },
-  { id: '6', name: 'DELL', price: 120000, category: 'Laptop', img: require('../../assets/images/laptop2.jpg') },
-  { id: '7', name: 'CANON', price: 75000, category: 'Camera', img: require('../../assets/images/canon.jpg') },
-  { id: '8', name: 'NIKON', price: 80000, category: 'Camera', img: require('../../assets/images/nikon.jpg') },
-];
-
-const categories = ['All', 'HP', 'Laptop', 'Camera'];
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  img: string;
+};
 
 export default function Produk() {
   const [searchText, setSearchText] = useState('');
   const [cartCounts, setCartCounts] = useState<{ [key: string]: number }>({});
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(["All"]);
 
-  const filteredProducts = productsData.filter(product => {
+
+  const filteredProducts = products.filter(product => {
     const matchCategory = selectedCategory === 'All' || product.category === selectedCategory;
     const matchSearch = product.name.toLowerCase().includes(searchText.toLowerCase());
     return matchCategory && matchSearch;
   });
 
-  const addToCart = (id: string) => {
-    setCartCounts(prev => ({
-      ...prev,
-      [id]: prev[id] ? prev[id] + 1 : 1,
-    }));
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(`${APP_CONFIG.API_URL}/api/kategori`);
+      if (!res.ok) throw new Error("Fetch category failed");
+
+      const json = await res.json();
+
+      const mapped = json.data.map((k: any) => k.kategori_nama);
+
+      setCategories(["All", ...mapped]);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const removeFromCart = (id: string) => {
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch(`${APP_CONFIG.API_URL}/api/alat`);
+      if (!res.ok) throw new Error("Fetch product failed");
+
+      const json = await res.json();
+
+      const mapped = json.data.map((item: any) => ({
+        id: String(item.alat_id),
+        name: item.alat_nama,
+        price: item.alat_hargaperhari,
+        category: item.kategori?.kategori_nama ?? "Unknown",
+        img: APP_CONFIG.IMAGE_BASE_URL + item.photo_path,
+      }));
+
+      setProducts(mapped);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+
+  const addToCart = async (id: string) => {
     setCartCounts(prev => {
-      if (!prev[id] || prev[id] <= 0) return prev;
-      return { ...prev, [id]: prev[id] - 1 };
+      const updated = {
+        ...prev,
+        [id]: (prev[id] || 0) + 1,
+      };
+
+      saveCart(updated);
+      return updated;
     });
   };
+
+  const removeFromCart = async (id: string) => {
+    setCartCounts(prev => {
+      if (!prev[id]) return prev;
+
+      const updated = {
+        ...prev,
+        [id]: prev[id] - 1,
+      };
+
+      if (updated[id] <= 0) {
+        delete updated[id];
+      }
+
+      saveCart(updated);
+      return updated;
+    });
+  };
+
+  const loadCart = async () => {
+    const cart = await AsyncStorage.getItem(CART_KEY);
+    setCartCounts(cart ? JSON.parse(cart) : {});
+  };
+  
+  useEffect(() => {
+    const init = async () => {
+      await checkAuth();
+      await fetchProducts();
+      await fetchCategories();
+      await loadCart();
+    };
+
+    init();
+  }, []);
+
 
   const renderItem = ({ item }: any) => {
     const count = cartCounts[item.id] || 0;
@@ -74,7 +146,7 @@ export default function Produk() {
   };
 
   const totalItems = Object.values(cartCounts).reduce((sum, val) => sum + val, 0);
-  const totalPrice = productsData.reduce((sum, product) => {
+  const totalPrice = products.reduce((sum, product) => {
     const count = cartCounts[product.id] || 0;
     return sum + product.price * count;
   }, 0);

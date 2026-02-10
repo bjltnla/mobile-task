@@ -37,6 +37,7 @@ export default function Login() {
 
       await AsyncStorage.setItem("token", result.token);
       await AsyncStorage.setItem("username", result.data.pelanggan_nama);
+      await AsyncStorage.setItem("pelanggan_id", result.data.pelanggan_id);
       await AsyncStorage.setItem("isLogin", "true");
 
       router.replace("/tabs");

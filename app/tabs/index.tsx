@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Dashboard() {
   const [username, setUsername] = useState('');
