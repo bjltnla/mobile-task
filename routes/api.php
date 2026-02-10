@@ -31,6 +31,11 @@ Route::get('/test', function () {
     return response()->json(['message' => 'API works!']);
 });
 
+Route::middleware(['auth:pelanggan'])->prefix('pelanggan')->group(function () {
+    Route::get('/me', [PelangganController::class, 'me']);
+    Route::post('/me/update/{id}', [PelangganController::class, 'update']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
 
 Route::get('/kategori', [KategoriController::class, 'index']);
 Route::post('/kategori',[KategoriController::class, 'store']);
@@ -50,6 +55,8 @@ Route::post('/penyewaan', [PenyewaanController::class, 'store']);
 Route::put('/penyewaan/{id}/status', [PenyewaanController::class, 'updateStatus']);
 Route::delete('/penyewaan/{id}', [PenyewaanController::class, 'destroy']);
 
+Route::post('pelanggan/sewa', [PenyewaanController::class, 'sewa']);
+Route::get('pelanggan/riwayat', [PenyewaanController::class, 'riwayat']);
 
 // Dashboard API
 Route::get('/dashboard', [DashboardController::class, 'dashboard']);

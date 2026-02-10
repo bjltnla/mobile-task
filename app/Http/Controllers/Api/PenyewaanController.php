@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Penyewaan;
 use App\Models\Alat;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use App\Models\PenyewaanDetail;
+use Illuminate\Support\Facades\DB;
 
 class PenyewaanController extends Controller
 {
@@ -110,6 +113,96 @@ class PenyewaanController extends Controller
             'status'  => true,
             'message' => 'Penyewaan berhasil ditambahkan',
             'data'    => $penyewaan
+        ]);
+    }
+
+    public function sewa(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'data.penyewaan_pelanggan_id' => 'required|integer|exists:pelanggan,pelanggan_id',
+            'data.penyewaan_tglsewa'      => 'required|date',
+            'data.penyewaan_tglkembali'      => 'required|date',
+            'data.penyewaan_totalharga'  => 'required|numeric|min:0',
+            'items'                      => 'required|array|min:1',
+            'items.*.id'                 => 'required|integer|exists:alat,alat_id',
+            'items.*.qty'                => 'required|integer|min:1',
+            'items.*.price'              => 'required|numeric|min:0',
+            'items.*.total'              => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // 1. Simpan penyewaan (header)
+            $penyewaan = Penyewaan::create([
+                'penyewaan_pelanggan_id' => $request->data['penyewaan_pelanggan_id'],
+                'penyewaan_tglsewa'      => $request->data['penyewaan_tglsewa'],
+                'penyewaan_tglkembali'   => $request->data['penyewaan_tglkembali'],
+                'penyewaan_totalharga'  => $request->data['penyewaan_totalharga'],
+                'penyewaan_sttpembayaran'=> 'belum',
+                'penyewaan_sttkembali'   => 'belum',
+            ]);
+
+            // 2. Simpan detail penyewaan
+            foreach ($request->items as $item) {
+                PenyewaanDetail::create([
+                    'detail_penyewaan_id' => $penyewaan->penyewaan_id,
+                    'detail_alat_id'      => $item['id'],
+                    'detail_jumlah'       => $item['qty'],
+                    'detail_harga'        => $item['price'],
+                    'detail_total'        => $item['total'],
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message'=> 'Penyewaan berhasil disimpan',
+                'data'   => $penyewaan->load('detail')
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Gagal menyimpan penyewaan',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function riwayat(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pelanggan_id' => 'required|integer|exists:pelanggan,pelanggan_id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $riwayat = Penyewaan::with([
+                'detail.alat'
+            ])
+            ->where('penyewaan_pelanggan_id', $request->pelanggan_id)
+            ->orderBy('penyewaan_tglsewa', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'data'   => $riwayat
         ]);
     }
 

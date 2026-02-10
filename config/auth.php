@@ -18,12 +18,21 @@ return [
             'provider' => 'admins',
             'hash' => false,
         ],
+
+        'pelanggan' => [
+            'driver' => 'jwt',
+            'provider' => 'pelanggan',
+        ],
     ],
 
     'providers' => [
         'admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\Admin::class,
+        ],
+        'pelanggan' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Pelanggan::class,
         ],
     ],
 

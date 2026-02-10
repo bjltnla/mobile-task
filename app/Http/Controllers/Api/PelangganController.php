@@ -130,58 +130,32 @@ class PelangganController extends Controller
 
         if (!$pelanggan) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Pelanggan tidak ditemukan'
             ], 404);
         }
 
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'pelanggan_nama'     => 'sometimes|required',
             'pelanggan_alamat'   => 'sometimes|required',
             'pelanggan_notelp'   => 'sometimes|required',
-            'pelanggan_email'    => 'sometimes|required|email|unique:pelanggan,pelanggan_email,' . $id,
-            'pelanggan_password' => 'sometimes|required|min:6',
+            'pelanggan_email'    => 'sometimes|required|email|unique:pelanggan,pelanggan_email,' . $id . ',pelanggan_id',
+            'pelanggan_password' => 'sometimes|min:6',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status'  => false,
-                'message' => $validator->errors()->first()
-            ], 422);
+        if (isset($validated['pelanggan_password'])) {
+            $validated['pelanggan_password'] = Hash::make($validated['pelanggan_password']);
         }
 
-        if ($request->pelanggan_nama) {
-            $pelanggan->pelanggan_nama = $request->pelanggan_nama;
-        }
-
-        if ($request->pelanggan_alamat) {
-            $pelanggan->pelanggan_alamat = $request->pelanggan_alamat;
-        }
-
-        if ($request->pelanggan_notelp) {
-            $pelanggan->pelanggan_notelp = $request->pelanggan_notelp;
-        }
-
-        if ($request->pelanggan_email) {
-            $pelanggan->pelanggan_email = $request->pelanggan_email;
-        }
-
-        if ($request->pelanggan_password) {
-            $pelanggan->pelanggan_password = Hash::make($request->pelanggan_password);
-        }
-
-        if ($request->photo_path) {
-            $pelanggan->photo_path = $request->photo_path;
-        }
-
-        $pelanggan->save();
+        $pelanggan->update($validated);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Data pelanggan berhasil diupdate',
-            'data'    => $pelanggan
+            'data' => $pelanggan
         ]);
     }
+
 
     /**
      * Hapus pelanggan
@@ -202,6 +176,23 @@ class PelangganController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Pelanggan berhasil dihapus'
+        ]);
+    }
+
+    public function me()
+    {
+        $user = auth('pelanggan')->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Pelanggan tidak ditemukan'
+            ], 401);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $user
         ]);
     }
 }

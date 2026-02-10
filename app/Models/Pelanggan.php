@@ -12,6 +12,9 @@ class Pelanggan extends Authenticatable implements JWTSubject
     protected $table = 'pelanggan';
     protected $primaryKey = 'pelanggan_id';
 
+    public $incrementing = true;     // ⬅️ WAJIB
+    protected $keyType = 'int';       // ⬅️ WAJIB
+
     public $timestamps = false; // ⬅️ PENTING
 
     protected $fillable = [
